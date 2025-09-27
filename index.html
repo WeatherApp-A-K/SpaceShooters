@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="style.css">
+        <title>Space shooters</title>
+    </head>
+    <body>
+        <h2>Space shooters</h2>
+        <div id="gameContainer">
+            <canvas id="gameBoard" width="500" height="550"></canvas>
+            <div id="dashboard">
+                <div id="gameScore">0</div>
+                <button id="resetBtn">Reset</button>
+                <div id="changeSkinContainer">
+                    <b>Skin:</b>
+                    <select id="changeSkinSelect">
+                        <option value="0" selected>Default</option>
+                        <option value="1">Blue</option>
+                        <option value="2">Orange</option>
+                    </select>
+                </div>
+            </div>
+            <div id="mobileControls">
+                <button id="leftBtn">← Left</button>
+                <button id="shootBtn">Shoot</button>
+                <button id="rightBtn">Right →</button>
+            </div>
+        </div>
+        <script src="script.js"></script>
+    </body>
+</html>
