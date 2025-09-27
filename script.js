@@ -10,8 +10,6 @@ const leftBtn = document.querySelector('#leftBtn');
 const rightBtn = document.querySelector('#rightBtn');
 const shootBtn = document.querySelector('#shootBtn');
 
-const gameWidth = gameBoard.width;
-const gameHeight = gameBoard.height;
 const unitSize = 25;
 
 const backGroundImage = new Image();
@@ -53,8 +51,8 @@ let touchXVelocity = 0;
 let shipWidth = unitSize * 3;
 let shipHeight = unitSize * 3;
 
-let shipX = (gameWidth / 2) - (unitSize * 2);
-let shipY = gameHeight - (unitSize * 4);
+let shipX = gameBoard.width / 2 - shipWidth / 2;
+let shipY = gameBoard.height - shipHeight * 1.5;
 
 let bulletArray = [];
 
@@ -72,6 +70,25 @@ let alienHeight = unitSize * 3;
 
 let enemyInterval;
 let speedInterval;
+
+function resizeCanvas() {
+    gameBoard.width = Math.min(window.innerWidth * 0.95, 800); 
+    gameBoard.height = Math.min(window.innerHeight * 0.7, 600); 
+}
+
+function resizeShipPosition() {
+    shipX = gameBoard.width / 2 - shipWidth / 2;
+    shipY = gameBoard.height - shipHeight * 1.5;
+}
+
+window.addEventListener("resize", () => {
+    resizeCanvas();
+    resizeShipPosition();
+});
+window.addEventListener("load", () => {
+    resizeCanvas();
+    resizeShipPosition();
+});
 
 window.addEventListener("keydown", changeDirection);
 window.addEventListener("keyup", stopShip);
@@ -166,7 +183,7 @@ function nextTick(){
         context.font = "48px Arial"
         context.textAlign = "center";
         context.textBaseline = "middle";
-        context.fillText("Game over!", gameWidth / 2, gameHeight / 2);
+        context.fillText("Game over!", gameBoard.width / 2, gameBoard.height / 2);
 
         const clonedGameOverSound = gameOverSound.cloneNode();
         clonedGameOverSound.play();
@@ -177,15 +194,15 @@ function moveShip(){
 
     if(shipX < 0){
         shipX = 0;
-    }else if(shipX + (shipWidth) > gameWidth){
-        shipX = gameWidth - (shipWidth);
+    }else if(shipX + (shipWidth) > gameBoard.width){
+        shipX = gameBoard.width - (shipWidth);
     }
 }
 function drawShip(){
    context.drawImage(ship, shipX, shipY, shipWidth, shipHeight); 
 }
 function drawBackGround(){
-    context.drawImage(backGroundImage, 0, 0, gameWidth, gameHeight);
+    context.drawImage(backGroundImage, 0, 0, gameBoard.width, gameBoard.height);
 }
 function drawEnemies(){
     for(let i = 0; i < alienArray.length; i++){
@@ -210,7 +227,7 @@ function moveEnemies() {
         let alien = alienArray[i];
         if(alien.alive){
             alien.y += alienVelocityY;
-            if(alien.y + alien.height == gameHeight - 5){
+            if(alien.y + alien.height >= gameBoard.height){
                 running = false;
             }
 
@@ -288,7 +305,7 @@ function drawBullet(){
     }
 }
 function generateEnemy(){
-    let randomX = Math.floor(Math.random() * (gameWidth - alienWidth));
+    let randomX = Math.floor(Math.random() * (gameBoard.width - alienWidth));
 
     const isPlanet = Math.random() < 0.05;
 
@@ -357,8 +374,8 @@ function resetGame(){
     score = 0;
     gameScore.textContent = score;
 
-    shipX = (gameWidth / 2) - (unitSize * 2);
-    shipY = gameHeight - (unitSize * 4);
+    shipX = (gameBoard.width / 2) - (unitSize * 2);
+    shipY = gameBoard.height - (unitSize * 4);
 
     alienVelocityY = 4.5;
 

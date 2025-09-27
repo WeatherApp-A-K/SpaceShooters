@@ -78,7 +78,7 @@ body{
         gap: 40px;
         pointer-events: auto;
         margin-top: 15px;
-        width: 50%;
+        width: auto;
         background-color: rgb(26, 26, 26);
         padding: 10px;
         border-radius: 6px;
