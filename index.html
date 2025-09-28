@@ -9,12 +9,20 @@
         <link rel="apple-touch-icon" href="Assets/apple-touch-icon.png">
     </head>
     <body>
-        <h2>Space shooters</h2>
         <div id="gameContainer">
+            <div id="title">
+                <h2>Space shooters</h2>
+                <button id="pauseBtn" class="game-btn">Pause</button>
+            </div>
             <canvas id="gameBoard"></canvas>
+            <div id="mobileControls">
+                <button id="leftBtn">← Left</button>
+                <button id="shootBtn">Shoot</button>
+                <button id="rightBtn">Right →</button>
+            </div>
             <div id="dashboard">
                 <div id="gameScore">0</div>
-                <button id="resetBtn">Reset</button>
+                <button id="resetBtn" class="game-btn">Reset</button>
                 <div id="changeSkinContainer">
                     <b>Skin:</b>
                     <select id="changeSkinSelect">
@@ -23,11 +31,6 @@
                         <option value="2">Orange</option>
                     </select>
                 </div>
-            </div>
-            <div id="mobileControls">
-                <button id="leftBtn">← Left</button>
-                <button id="shootBtn">Shoot</button>
-                <button id="rightBtn">Right →</button>
             </div>
         </div>
         <script src="script.js"></script>

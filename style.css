@@ -3,6 +3,13 @@ body{
     background-color: black;
     color: white;
 }
+#title {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
 #gameContainer {
     display: flex;
     justify-content: center;
@@ -26,19 +33,34 @@ body{
     align-items: center;
     flex-direction: row;
     gap: 20px;
+    border: 1px solid white;
+    background-color: rgb(26, 26, 26);
+    padding: 10px;
+    border-radius: 6px;
 }
-#resetBtn{
-    border: 1px solid #dc3545;
+.game-btn {
+    border: 1px solid;
     border-radius: 6px;
     padding: 10px 20px;
     font-size: 16px;
     cursor: pointer;
     transition: 0.3s ease;
     color: #fff;
+    width: 100px;
+}
+#resetBtn {
+    border-color: #dc3545;
     background-color: #dc3545;
 }
 #resetBtn:hover {
     background-color: #bb2d3b;
+}
+#pauseBtn {
+    border-color: #0d6efd;
+    background-color: #0d6efd;
+}
+#pauseBtn:hover {
+    background-color: #0b5ed7;
 }
 #changeSkinSelect {
     display: block;

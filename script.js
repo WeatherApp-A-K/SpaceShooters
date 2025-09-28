@@ -2,7 +2,9 @@ const gameBoard = document.querySelector('#gameBoard');
 const context = gameBoard.getContext('2d');
 
 const gameScore = document.querySelector('#gameScore');
+
 const resetBtn = document.querySelector('#resetBtn');
+const pauseBtn = document.querySelector('#pauseBtn');
 
 const changeSkinSelect = document.querySelector('#changeSkinSelect');
 
@@ -42,6 +44,13 @@ const gameOverSound = new Audio("Assets/Sounds/game-over.mp3");
 const specialSound = new Audio("Assets/Sounds/special-sound.mp3");
 
 let running = false;
+let paused = false;
+
+let buttonPressed = {
+    left: false,
+    right: false,
+    shoot: false
+};
 
 let score = 0;
 
@@ -72,8 +81,8 @@ let enemyInterval;
 let speedInterval;
 
 function resizeCanvas() {
-    gameBoard.width = Math.min(window.innerWidth * 0.95, 800); 
-    gameBoard.height = Math.min(window.innerHeight * 0.7, 600); 
+    gameBoard.width = Math.min(window.innerWidth * 0.95, 500); 
+    gameBoard.height = Math.min(window.innerHeight * 0.7, 550); 
 }
 
 function resizeShipPosition() {
@@ -91,31 +100,56 @@ window.addEventListener("load", () => {
 });
 
 window.addEventListener("keydown", changeDirection);
+
 window.addEventListener("keyup", stopShip);
+
 window.addEventListener("keyup", shootBullet);
+
+window.addEventListener("keydown", (event) => {
+    if(event.code === "KeyP") {
+        togglePause();
+    }
+})
+
+function updateVelocity() {
+    touchXVelocity = 0;
+    if(buttonPressed.left) touchXVelocity -= unitSize;
+    if(buttonPressed.right) touchXVelocity += unitSize;
+    if(buttonPressed.shoot && canShoot) shootBullet({ code: 'Space' });
+}
 
 leftBtn.addEventListener('touchstart', (e) => {
     e.preventDefault();
-    touchXVelocity -= unitSize;
+    buttonPressed.left = true;
+    updateVelocity();
 });
 leftBtn.addEventListener('touchend', (e) => {
     e.preventDefault();
-    touchXVelocity = 0
+    buttonPressed.left = false;
+    updateVelocity();
 });
 
 rightBtn.addEventListener('touchstart', (e) => {
     e.preventDefault();
-    touchXVelocity = unitSize
+    buttonPressed.right = true;
+    updateVelocity();
 });
 rightBtn.addEventListener('touchend', (e) => {
     e.preventDefault();
-    touchXVelocity = 0
+    buttonPressed.right = false;
+    updateVelocity();
 });
 
 shootBtn.addEventListener('touchstart', (e) => {
     e.preventDefault();
-    if(canShoot) shootBullet({ code: 'Space' });
-})
+    buttonPressed.shoot = true;
+    updateVelocity();
+});
+shootBtn.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    buttonPressed.shoot = false;
+    updateVelocity();
+});
 
 window.addEventListener("load", function() {
     const savedSkin = Number(this.localStorage.getItem("selectedSkin"));
@@ -137,6 +171,8 @@ changeSkinSelect.addEventListener("change", function() {
 });
 
 resetBtn.addEventListener("click", resetGame);
+
+pauseBtn.addEventListener("click", togglePause);
 
 let imagesLoaded = 0;
 
@@ -164,7 +200,7 @@ function gameStart(){
     nextTick();
 }
 function nextTick(){
-    if(running){
+    if(running && !paused){
         setTimeout(() => {
             drawBackGround();
             drawShip();
@@ -176,17 +212,35 @@ function nextTick(){
             nextTick();
         }, 75)
     }
-    else{
-        console.log("Game over!");
-        
-        context.fillStyle = "white";
-        context.font = "48px Arial"
-        context.textAlign = "center";
-        context.textBaseline = "middle";
-        context.fillText("Game over!", gameBoard.width / 2, gameBoard.height / 2);
+    else {
+        drawBackGround();
+        drawShip();
+        drawBullet();
+        drawEnemies();
 
-        const clonedGameOverSound = gameOverSound.cloneNode();
-        clonedGameOverSound.play();
+        if(!running) {
+            drawGameOverScreen();
+        } else if (paused) {
+            drawPauseScreen();
+        }
+    }
+}
+function resumeGame() {
+    if(paused) {
+        paused = false;
+        nextTick();
+    }
+}
+function togglePause() {
+    if(!running) return;
+
+    if(paused){
+        pauseBtn.textContent = "Pause";
+        resumeGame();
+    } else {
+        paused = true;
+        pauseBtn.textContent = "Resume";
+        nextTick();
     }
 }
 function moveShip(){
@@ -198,8 +252,27 @@ function moveShip(){
         shipX = gameBoard.width - (shipWidth);
     }
 }
+function drawGameOverScreen() {
+    console.log("Game over!");
+        
+    context.fillStyle = "white";
+    context.font = "48px Arial"
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText("Game over!", gameBoard.width / 2, gameBoard.height / 2);
+
+    const clonedGameOverSound = gameOverSound.cloneNode();
+    clonedGameOverSound.play();
+}
+function drawPauseScreen(){
+    context.fillStyle = "white";
+    context.font = "48px Arial"
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText("Game paused!", gameBoard.width / 2, gameBoard.height / 2);
+}
 function drawShip(){
-   context.drawImage(ship, shipX, shipY, shipWidth, shipHeight); 
+    context.drawImage(ship, shipX, shipY, shipWidth, shipHeight); 
 }
 function drawBackGround(){
     context.drawImage(backGroundImage, 0, 0, gameBoard.width, gameBoard.height);
@@ -367,6 +440,7 @@ function checkCollisions() {
 }
 function resetGame(){
     running = false;
+    paused = false;
 
     bulletArray = [];
     alienArray = [];
