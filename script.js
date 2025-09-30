@@ -14,8 +14,22 @@ const shootBtn = document.querySelector('#shootBtn');
 
 const unitSize = 25;
 
+const backGrounds = [
+    "Assets/Images/Backgrounds/space-background.png",
+    "Assets/Images/Backgrounds/space-background-1.png",
+    "Assets/Images/Backgrounds/space-background-2.png",
+    "Assets/Images/Backgrounds/space-background-3.mp4",
+    "Assets/Images/Backgrounds/space-background-4.png",
+    "Assets/Images/Backgrounds/space-background-5.png"
+];
+
+const backGroundVideo = document.createElement("video");
+backGroundVideo.src = backGrounds[3];
+backGroundVideo.loop = true;
+backGroundVideo.muted = true;
+
 const backGroundImage = new Image();
-backGroundImage.src = "Assets/Images/Backgrounds/space-background-1.png";
+backGroundImage.src = backGrounds[1];
 
 const skins = [
     "Assets/Images/Ships/spaceship.png",
@@ -52,6 +66,8 @@ let buttonPressed = {
     shoot: false
 };
 
+let currentLevel = 1;
+
 let score = 0;
 
 let xVelocity = 0;
@@ -76,6 +92,8 @@ let alienVelocityY = 4.5;
 
 let alienWidth = unitSize * 3;
 let alienHeight = unitSize * 3;
+
+let tickTimeout;
 
 let enemyInterval;
 let speedInterval;
@@ -204,7 +222,7 @@ function gameStart(){
 }
 function nextTick(){
     if(running && !paused){
-        setTimeout(() => {
+        tickTimeout = setTimeout(() => {
             drawBackGround();
             drawShip();
             moveShip();
@@ -212,6 +230,7 @@ function nextTick(){
             drawEnemies();
             moveEnemies();
             checkCollisions();
+            checkUpgrades();
             nextTick();
         }, 75)
     }
@@ -278,7 +297,12 @@ function drawShip(){
     context.drawImage(ship, shipX, shipY, shipWidth, shipHeight); 
 }
 function drawBackGround(){
-    context.drawImage(backGroundImage, 0, 0, gameBoard.width, gameBoard.height);
+    if(currentLevel === 3 && backGroundVideo.readyState >= 2){
+        if(backGroundVideo.paused) backGroundVideo.play();
+        context.drawImage(backGroundVideo, 0, 0, gameBoard.width, gameBoard.height);
+    } else {
+        context.drawImage(backGroundImage, 0, 0, gameBoard.width, gameBoard.height);
+    }
 }
 function drawEnemies(){
     for(let i = 0; i < alienArray.length; i++){
@@ -441,12 +465,25 @@ function checkCollisions() {
         }
     }
 }
+function checkUpgrades() {
+    if (score >= 1000 && currentLevel === 1) {
+        currentLevel = 2;
+        backGroundImage.src = backGrounds[5];
+    } 
+    else if (score >= 1500 && currentLevel === 2) {
+        currentLevel = 3;
+        shootCooldown = 150;
+        backGroundVideo.play();
+    }
+}
 function resetGame(){
     running = false;
     paused = false;
 
     bulletArray = [];
     alienArray = [];
+
+    currentLevel = 1;
 
     score = 0;
     gameScore.textContent = score;
@@ -456,11 +493,20 @@ function resetGame(){
 
     alienVelocityY = 4.5;
 
+    backGroundImage.src = backGrounds[1];
+
+    if(!backGroundVideo.paused){
+        backGroundVideo.pause();
+        backGroundVideo.currentTime = 0;
+    }
+
     clearInterval(enemyInterval);
     enemyInterval = null;
 
     clearInterval(speedInterval);
     speedInterval = null;
+
+    clearTimeout(tickTimeout);
 
     running = true;
     gameStart();
