@@ -25,6 +25,7 @@ const backGrounds = [
 
 const backGroundVideo = document.createElement("video");
 backGroundVideo.src = backGrounds[3];
+backGroundVideo.playsInline = true;
 backGroundVideo.loop = true;
 backGroundVideo.muted = true;
 
