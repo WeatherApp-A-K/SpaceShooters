@@ -15,7 +15,7 @@ const shootBtn = document.querySelector('#shootBtn');
 const unitSize = 25;
 
 const backGroundImage = new Image();
-backGroundImage.src = "Assets/Images/space-background.png";
+backGroundImage.src = "Assets/Images/Backgrounds/space-background-1.png";
 
 const skins = [
     "Assets/Images/Ships/spaceship.png",
@@ -158,16 +158,19 @@ window.addEventListener("load", function() {
         ship.src = skins[savedSkin]
     }
 });
-changeSkinSelect.addEventListener("change", function() {
-    const selectedIndex = changeSkinSelect.value;
 
+function changeSkin(index) {
     const newShip = new Image();
-    newShip.src = skins[selectedIndex];
+    newShip.src = skins[index];
 
     newShip.onload = () => {
-        ship.src = skins[selectedIndex];
-        localStorage.setItem("selectedSkin", selectedIndex);
+        ship.src = skins[index];
+        localStorage.setItem("selectedSkin", index);
     }
+}
+
+changeSkinSelect.addEventListener("change", function() {
+    changeSkin(this.value);
 });
 
 resetBtn.addEventListener("click", resetGame);
