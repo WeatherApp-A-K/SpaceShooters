@@ -14,7 +14,7 @@ const shootBtn = document.querySelector('#shootBtn');
 
 const unitSize = 25;
 
-const backGrounds = [
+const BACKGROUNDS = [
     "Assets/Images/Backgrounds/space-background.png",
     "Assets/Images/Backgrounds/space-background-1.png",
     "Assets/Images/Backgrounds/space-background-2.png",
@@ -24,22 +24,49 @@ const backGrounds = [
 ];
 
 const backGroundVideo = document.createElement("video");
-backGroundVideo.src = backGrounds[3];
+backGroundVideo.src = BACKGROUNDS[3];
 backGroundVideo.playsInline = true;
 backGroundVideo.loop = true;
 backGroundVideo.muted = true;
 
 const backGroundImage = new Image();
-backGroundImage.src = backGrounds[1];
+backGroundImage.src = BACKGROUNDS[1];
 
-const skins = [
+const LEVEL_SETTINGS = [
+    {
+        scoreThreshold: 0,
+        backgroundSrc: BACKGROUNDS[1],
+        alienSpeed: 4.5,
+        shootCooldown: 300,
+    },
+    {
+        scoreThreshold: 500,
+        backgroundSrc: BACKGROUNDS[5], 
+        alienSpeed: 6.0,               
+        shootCooldown: 300,
+    },
+    {
+        scoreThreshold: 1000,
+        backgroundSrc: BACKGROUNDS[2], 
+        alienSpeed: 7.5,               
+        shootCooldown: 200,
+    },
+    {
+        scoreThreshold: 1500,
+        backgroundSrc: BACKGROUNDS[3],
+        alienSpeed: 9,              
+        shootCooldown: 150,
+    },
+]
+
+const SHIP_SKINS = [
     "Assets/Images/Ships/spaceship.png",
     "Assets/Images/Ships/spaceship-1.png",
     "Assets/Images/Ships/spaceship-2.png"
 ]
 
 const ship = new Image();
-ship.src = skins[0];
+ship.src = SHIP_SKINS[0];
 
 const enemyShip = new Image();
 enemyShip.src = "Assets/Images/Ships/enemy-spaceship.png";
@@ -77,8 +104,8 @@ let touchXVelocity = 0;
 let shipWidth = unitSize * 3;
 let shipHeight = unitSize * 3;
 
-let shipX = gameBoard.width / 2 - shipWidth / 2;
-let shipY = gameBoard.height - shipHeight * 1.5;
+let shipX = 0;
+let shipY = 0;
 
 let bulletArray = [];
 
@@ -176,16 +203,16 @@ window.addEventListener("load", function() {
     const savedSkin = Number(this.localStorage.getItem("selectedSkin"));
     if(!isNaN(savedSkin)){
         changeSkinSelect.value = savedSkin;
-        ship.src = skins[savedSkin]
+        ship.src = SHIP_SKINS[savedSkin]
     }
 });
 
 function changeSkin(index) {
     const newShip = new Image();
-    newShip.src = skins[index];
+    newShip.src = SHIP_SKINS[index];
 
     newShip.onload = () => {
-        ship.src = skins[index];
+        ship.src = SHIP_SKINS[index];
         localStorage.setItem("selectedSkin", index);
     }
 }
@@ -211,22 +238,28 @@ function gameStart(){
     running = true;
     gameScore.textContent = score;
 
-    if(!enemyInterval){
+    resizeShipPosition();
+
+    startIntervals();
+
+    animationFrameId = requestAnimationFrame(nextTick); 
+}
+function startIntervals() {
+    if(!enemyInterval) {
         enemyInterval = setInterval(generateEnemy, 1000);
     }
-
     if(!speedInterval){
         speedInterval = setInterval(() => {
             alienVelocityY += 0.5;
         }, 5000);
     }
-
-    nextTick();
 }
 function nextTick(timeStamp){
     if(!lastTime) lastTime = timeStamp;
     const deltaTime = (timeStamp - lastTime) / 1000;
     lastTime = timeStamp;
+
+    console.log('test')
 
     if(running && !paused){
         drawBackGround();
@@ -256,7 +289,12 @@ function nextTick(timeStamp){
 function resumeGame() {
     if(paused) {
         paused = false;
-        nextTick();
+
+        lastTime = 0;
+
+        startIntervals();
+
+        animationFrameId = requestAnimationFrame(nextTick);
     }
 }
 function togglePause() {
@@ -268,10 +306,19 @@ function togglePause() {
     } else {
         paused = true;
         pauseBtn.textContent = "Resume";
-        nextTick();
+
+        clearInterval(enemyInterval);
+        enemyInterval = null; 
+        
+        clearInterval(speedInterval);
+        speedInterval = null;
     }
 }
 function moveShip(deltaTime){
+    if (isNaN(shipX)) {
+        shipX = gameBoard.width / 2 - shipWidth / 2;
+    }
+
     shipX += (xVelocity + touchXVelocity) * deltaTime * 15;
 
     if(shipX < 0){
@@ -322,8 +369,13 @@ function drawEnemies(){
         }
     }
 }
-function drawExplosion(x, y){
-    context.drawImage(explosion, x, y, unitSize * 2, unitSize * 2);
+function drawExplosion(alien){
+    const explosionSize = alien.width;
+
+    const x = alien.x + alien.width / 2 - explosionSize / 2;
+    const y = alien.y + alien.height / 2 - explosionSize / 2;
+
+    context.drawImage(explosion, x, y, explosionSize, explosionSize);
 }
 function drawShoot(x, y){
     context.drawImage(shoot, x, y, unitSize * 2, unitSize * 2);
@@ -462,7 +514,7 @@ function checkCollisions() {
                     clonedSpecialSound.play();
                 }
 
-                drawExplosion(alien.x + unitSize / 2, alien.y);
+                drawExplosion(alien);
 
                 score += alien.points;
                 gameScore.textContent = score;
@@ -472,14 +524,33 @@ function checkCollisions() {
     }
 }
 function checkUpgrades() {
-    if (score >= 500 && currentLevel === 1) {
-        currentLevel = 2;
-        backGroundImage.src = backGrounds[5];
-    } 
-    else if (score >= 1000 && currentLevel === 2) {
-        currentLevel = 3;
-        shootCooldown = 150;
-        backGroundVideo.play();
+    const nextLevelIndex = currentLevel;
+
+    if(nextLevelIndex < LEVEL_SETTINGS.length){
+        const nextLevelSettings = LEVEL_SETTINGS[nextLevelIndex];
+
+        if(score >= nextLevelSettings.scoreThreshold) {
+            applyLevelSettings(nextLevelIndex)
+        }
+    }
+}
+function applyLevelSettings(levelIndex) {
+    const settings = LEVEL_SETTINGS[levelIndex];
+
+    currentLevel = levelIndex + 1;
+    alienVelocityY = settings.alienSpeed;
+    shootCooldown = settings.shootCooldown;
+
+    if(settings.backgroundSrc.endsWith('.mp4')){
+        backGroundVideo.src = settings.backgroundSrc; 
+        backGroundVideo.load();
+    } else {
+        backGroundImage.src = settings.backgroundSrc;
+
+        if(!backGroundVideo.paused) {
+            backGroundVideo.pause();
+            backGroundVideo.currentTime = 0;
+        }
     }
 }
 function resetGame(){
@@ -489,17 +560,8 @@ function resetGame(){
     bulletArray = [];
     alienArray = [];
 
-    currentLevel = 1;
-
     score = 0;
     gameScore.textContent = score;
-
-    shipX = (gameBoard.width / 2) - (unitSize * 2);
-    shipY = gameBoard.height - (unitSize * 4);
-
-    alienVelocityY = 4.5;
-
-    backGroundImage.src = backGrounds[1];
 
     if(!backGroundVideo.paused){
         backGroundVideo.pause();
@@ -513,6 +575,10 @@ function resetGame(){
     speedInterval = null;
 
     cancelAnimationFrame(animationFrameId);
+
+    lastTime = 0;
+
+    applyLevelSettings(0);
 
     running = true;
     gameStart();
