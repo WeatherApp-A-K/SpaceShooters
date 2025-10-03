@@ -94,10 +94,12 @@ let alienVelocityY = 4.5;
 let alienWidth = unitSize * 3;
 let alienHeight = unitSize * 3;
 
-let tickTimeout;
+let animationFrameId;
 
 let enemyInterval;
 let speedInterval;
+
+let lastTime = 0;
 
 function resizeCanvas() {
     gameBoard.width = Math.min(window.innerWidth * 0.95, 500); 
@@ -221,19 +223,22 @@ function gameStart(){
 
     nextTick();
 }
-function nextTick(){
+function nextTick(timeStamp){
+    if(!lastTime) lastTime = timeStamp;
+    const deltaTime = (timeStamp - lastTime) / 1000;
+    lastTime = timeStamp;
+
     if(running && !paused){
-        tickTimeout = setTimeout(() => {
-            drawBackGround();
-            drawShip();
-            moveShip();
-            drawBullet();
-            drawEnemies();
-            moveEnemies();
-            checkCollisions();
-            checkUpgrades();
-            nextTick();
-        }, 75)
+        drawBackGround();
+        drawShip();
+        moveShip(deltaTime);
+        drawBullet(deltaTime);
+        drawEnemies();
+        moveEnemies(deltaTime);
+        checkCollisions();
+        checkUpgrades();
+        
+        animationFrameId = requestAnimationFrame(nextTick);
     }
     else {
         drawBackGround();
@@ -266,8 +271,8 @@ function togglePause() {
         nextTick();
     }
 }
-function moveShip(){
-    shipX += xVelocity + touchXVelocity;
+function moveShip(deltaTime){
+    shipX += (xVelocity + touchXVelocity) * deltaTime * 15;
 
     if(shipX < 0){
         shipX = 0;
@@ -323,11 +328,11 @@ function drawExplosion(x, y){
 function drawShoot(x, y){
     context.drawImage(shoot, x, y, unitSize * 2, unitSize * 2);
 }
-function moveEnemies() {
+function moveEnemies(deltaTime) {
     for(let i = 0; i < alienArray.length; i++){
         let alien = alienArray[i];
         if(alien.alive){
-            alien.y += alienVelocityY;
+            alien.y += alienVelocityY * deltaTime * 15;
             if(alien.y + alien.height >= gameBoard.height){
                 running = false;
             }
@@ -397,10 +402,10 @@ function shootBullet(event){
         }, shootCooldown);
     }
 }
-function drawBullet(){
+function drawBullet(deltaTime){
     for(let i = 0; i < bulletArray.length; i++){
         let bullet = bulletArray[i];
-        bullet.y += bulletVelocityY;
+        bullet.y += bulletVelocityY * deltaTime * 15;
         context.fillStyle = "white";
         context.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
     }
@@ -467,11 +472,11 @@ function checkCollisions() {
     }
 }
 function checkUpgrades() {
-    if (score >= 1000 && currentLevel === 1) {
+    if (score >= 500 && currentLevel === 1) {
         currentLevel = 2;
         backGroundImage.src = backGrounds[5];
     } 
-    else if (score >= 1500 && currentLevel === 2) {
+    else if (score >= 1000 && currentLevel === 2) {
         currentLevel = 3;
         shootCooldown = 150;
         backGroundVideo.play();
@@ -507,7 +512,7 @@ function resetGame(){
     clearInterval(speedInterval);
     speedInterval = null;
 
-    clearTimeout(tickTimeout);
+    cancelAnimationFrame(animationFrameId);
 
     running = true;
     gameStart();
