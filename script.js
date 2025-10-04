@@ -20,7 +20,8 @@ const BACKGROUNDS = [
     "Assets/Images/Backgrounds/space-background-2.png",
     "Assets/Images/Backgrounds/space-background-3.mp4",
     "Assets/Images/Backgrounds/space-background-4.png",
-    "Assets/Images/Backgrounds/space-background-5.png"
+    "Assets/Images/Backgrounds/space-background-5.png",
+    "Assets/Images/Backgrounds/space-background-7.gif"
 ];
 
 const backGroundVideo = document.createElement("video");
@@ -40,24 +41,30 @@ const LEVEL_SETTINGS = [
         shootCooldown: 300,
     },
     {
-        scoreThreshold: 500,
+        scoreThreshold: 100,
         backgroundSrc: BACKGROUNDS[5], 
         alienSpeed: 6.0,               
         shootCooldown: 300,
     },
     {
-        scoreThreshold: 1000,
+        scoreThreshold: 200,
         backgroundSrc: BACKGROUNDS[2], 
         alienSpeed: 7.5,               
         shootCooldown: 200,
     },
     {
-        scoreThreshold: 1500,
+        scoreThreshold: 300,
+        backgroundSrc: BACKGROUNDS[6],
+        alienSpeed: 10,              
+        shootCooldown: 100,
+    },
+    {
+        scoreThreshold: 400,
         backgroundSrc: BACKGROUNDS[3],
         alienSpeed: 9,              
         shootCooldown: 150,
     },
-]
+];
 
 const SHIP_SKINS = [
     "Assets/Images/Ships/spaceship.png",
@@ -96,6 +103,9 @@ let buttonPressed = {
 
 let currentLevel = 1;
 
+let levelUpMessage = null;
+let levelUpTimer = null;
+
 let score = 0;
 
 let xVelocity = 0;
@@ -110,6 +120,8 @@ let shipY = 0;
 let bulletArray = [];
 
 let bulletVelocityY = -20;
+
+let shootFlash = null;
 
 let canShoot = true;
 let shootCooldown = 300;
@@ -259,17 +271,18 @@ function nextTick(timeStamp){
     const deltaTime = (timeStamp - lastTime) / 1000;
     lastTime = timeStamp;
 
-    console.log('test')
-
     if(running && !paused){
         drawBackGround();
         drawShip();
         moveShip(deltaTime);
         drawBullet(deltaTime);
+        drawShootFlash();
         drawEnemies();
         moveEnemies(deltaTime);
         checkCollisions();
         checkUpgrades();
+        drawLevelUpMessage();
+        drawHud();
         
         animationFrameId = requestAnimationFrame(nextTick);
     }
@@ -278,6 +291,7 @@ function nextTick(timeStamp){
         drawShip();
         drawBullet();
         drawEnemies();
+        drawHud();
 
         if(!running) {
             drawGameOverScreen();
@@ -344,13 +358,42 @@ function drawPauseScreen(){
     context.font = "48px Arial"
     context.textAlign = "center";
     context.textBaseline = "middle";
+
     context.fillText("Game paused!", gameBoard.width / 2, gameBoard.height / 2);
+}
+function drawHud() {
+    context.fillStyle = "white";
+    context.font = "20px Arial";
+    context.textAlign = "left";
+    context.textBaseline = "top";
+
+    context.fillText("Level " + currentLevel, 10, 10);
+
+    context.textAlign = "right";
+    context.fillText("Score: " + score, gameBoard.width - 10, 10);
+}
+function showLevelUpMessage(level) {
+    levelUpMessage = "LEVEL " + level + "!";
+    clearTimeout(levelUpTimer);
+    levelUpTimer = setTimeout(() => {
+        levelUpMessage = null;
+    }, 1000)
+}
+function drawLevelUpMessage() {
+    if(levelUpMessage) {
+        context.fillStyle = "white";
+        context.font = "48px Arial";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+
+        context.fillText(levelUpMessage, gameBoard.width / 2, gameBoard.height / 2);
+    }
 }
 function drawShip(){
     context.drawImage(ship, shipX, shipY, shipWidth, shipHeight); 
 }
 function drawBackGround(){
-    if(currentLevel === 3 && backGroundVideo.readyState >= 2){
+    if(currentLevel === 5 && backGroundVideo.readyState >= 2){
         if(backGroundVideo.paused) backGroundVideo.play();
         context.drawImage(backGroundVideo, 0, 0, gameBoard.width, gameBoard.height);
     } else {
@@ -377,8 +420,15 @@ function drawExplosion(alien){
 
     context.drawImage(explosion, x, y, explosionSize, explosionSize);
 }
-function drawShoot(x, y){
-    context.drawImage(shoot, x, y, unitSize * 2, unitSize * 2);
+function drawShootFlash() {
+    if(shootFlash) {
+        context.drawImage(shoot, shootFlash.x, shootFlash.y, unitSize * 2, unitSize * 2);
+        shootFlash.timer--;
+
+        if(shootFlash.timer <= 0) {
+            shootFlash = null;
+        }
+    }
 }
 function moveEnemies(deltaTime) {
     for(let i = 0; i < alienArray.length; i++){
@@ -445,7 +495,11 @@ function shootBullet(event){
         const clonedShootingSound = shootingSound.cloneNode();
         clonedShootingSound.play();
 
-        drawShoot(shipX + unitSize / 2, shipY - 50);
+        shootFlash = {
+            x: shipX + unitSize / 2,
+            y: shipY - 50,
+            timer: 2
+        }
 
         bulletArray.push(bullet);
 
@@ -538,6 +592,9 @@ function applyLevelSettings(levelIndex) {
     const settings = LEVEL_SETTINGS[levelIndex];
 
     currentLevel = levelIndex + 1;
+
+    showLevelUpMessage(currentLevel);
+
     alienVelocityY = settings.alienSpeed;
     shootCooldown = settings.shootCooldown;
 
