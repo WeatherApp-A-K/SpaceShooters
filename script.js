@@ -41,25 +41,25 @@ const LEVEL_SETTINGS = [
         shootCooldown: 300,
     },
     {
-        scoreThreshold: 100,
+        scoreThreshold: 500,
         backgroundSrc: BACKGROUNDS[5], 
         alienSpeed: 6.0,               
         shootCooldown: 300,
     },
     {
-        scoreThreshold: 200,
+        scoreThreshold: 1000,
         backgroundSrc: BACKGROUNDS[2], 
         alienSpeed: 7.5,               
         shootCooldown: 200,
     },
     {
-        scoreThreshold: 300,
+        scoreThreshold: 1500,
         backgroundSrc: BACKGROUNDS[6],
         alienSpeed: 10,              
         shootCooldown: 100,
     },
     {
-        scoreThreshold: 400,
+        scoreThreshold: 2000,
         backgroundSrc: BACKGROUNDS[3],
         alienSpeed: 9,              
         shootCooldown: 150,
@@ -157,6 +157,7 @@ window.addEventListener("resize", () => {
 window.addEventListener("load", () => {
     resizeCanvas();
     resizeShipPosition();
+    displayScores();
 });
 
 window.addEventListener("keydown", changeDirection);
@@ -300,6 +301,25 @@ function nextTick(timeStamp){
         }
     }
 }
+function saveScore(score) {
+    let scores = JSON.parse(localStorage.getItem('scores')) || [];
+    scores.push({ value: score, date: new Date().toLocaleString() });
+    localStorage.setItem('scores', JSON.stringify(scores));
+}
+function displayScores() {
+    const scoreTableBody = document.querySelector('#scoreTable tbody');
+    scoreTableBody.innerHTML = '';
+
+    const scores = JSON.parse(localStorage.getItem('scores')) || [];
+
+    scores.sort((a, b) => b.value - a.value);
+
+    scores.forEach(s => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${s.value}</td><td>${s.date}</td>`;
+        scoreTableBody.appendChild(row);
+    });
+}
 function resumeGame() {
     if(paused) {
         paused = false;
@@ -343,6 +363,9 @@ function moveShip(deltaTime){
 }
 function drawGameOverScreen() {
     console.log("Game over!");
+
+    saveScore(score);
+    displayScores();
         
     context.fillStyle = "white";
     context.font = "48px Arial"
