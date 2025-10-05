@@ -5,6 +5,7 @@ const gameScore = document.querySelector('#gameScore');
 
 const resetBtn = document.querySelector('#resetBtn');
 const pauseBtn = document.querySelector('#pauseBtn');
+const clearScoreBtn = document.querySelector('#clearScoreBtn');
 
 const changeSkinSelect = document.querySelector('#changeSkinSelect');
 
@@ -157,10 +158,16 @@ window.addEventListener("resize", () => {
 window.addEventListener("load", () => {
     resizeCanvas();
     resizeShipPosition();
+    applyLevelSettings(0);
     displayScores();
 });
 
-window.addEventListener("keydown", changeDirection);
+window.addEventListener("keydown", (event) => {
+    if (event.code === "Space") {
+        event.preventDefault(); 
+    }
+    changeDirection(event);
+});
 
 window.addEventListener("keyup", stopShip);
 
@@ -238,6 +245,8 @@ resetBtn.addEventListener("click", resetGame);
 
 pauseBtn.addEventListener("click", togglePause);
 
+clearScoreBtn.addEventListener("click", clearScore)
+
 let imagesLoaded = 0;
 
 backGroundImage.onload = ship.onload = enemyShip.onload = function(){
@@ -306,6 +315,11 @@ function saveScore(score) {
     scores.push({ value: score, date: new Date().toLocaleString() });
     localStorage.setItem('scores', JSON.stringify(scores));
 }
+function getMaxScore() {
+    let scores = JSON.parse(localStorage.getItem('scores')) || [];
+    if(scores.length === 0) return 0;
+    return Math.max(...scores.map(s => s.value));
+}
 function displayScores() {
     const scoreTableBody = document.querySelector('#scoreTable tbody');
     scoreTableBody.innerHTML = '';
@@ -348,6 +362,10 @@ function togglePause() {
         speedInterval = null;
     }
 }
+function clearScore() {
+    localStorage.removeItem('scores');
+    displayScores();
+}
 function moveShip(deltaTime){
     if (isNaN(shipX)) {
         shipX = gameBoard.width / 2 - shipWidth / 2;
@@ -364,8 +382,10 @@ function moveShip(deltaTime){
 function drawGameOverScreen() {
     console.log("Game over!");
 
-    saveScore(score);
-    displayScores();
+    if(score > 0) {
+        saveScore(score);
+        displayScores();
+    }
         
     context.fillStyle = "white";
     context.font = "48px Arial"
@@ -393,7 +413,16 @@ function drawHud() {
     context.fillText("Level " + currentLevel, 10, 10);
 
     context.textAlign = "right";
-    context.fillText("Score: " + score, gameBoard.width - 10, 10);
+    
+    context.fillText("Best score: " + getMaxScore(), gameBoard.width - 10, 10);
+
+    if(score >= getMaxScore()) {
+        context.fillStyle = "gold";
+    } else {
+        context.fillStyle = "white";
+    }
+
+    context.fillText("Score: " + score, gameBoard.width - 10, 35);
 }
 function showLevelUpMessage(level) {
     levelUpMessage = "LEVEL " + level + "!";

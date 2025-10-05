@@ -38,6 +38,11 @@ body{
     padding: 10px;
     border-radius: 6px;
 }
+#scoreTableContainer {
+    width: 40%;
+    flex-direction: column;
+    gap: 10px;
+}
 .game-btn {
     border: 1px solid;
     border-radius: 6px;
@@ -48,11 +53,11 @@ body{
     color: #fff;
     width: 100px;
 }
-#resetBtn {
+#resetBtn, #clearScoreBtn {
     border-color: #dc3545;
     background-color: #dc3545;
 }
-#resetBtn:hover {
+#resetBtn:hover, #clearScoreBtn:hover {
     background-color: #bb2d3b;
 }
 #pauseBtn {
@@ -95,15 +100,13 @@ body{
 }
 #scoreTable {
     width: 100%;
-    max-width: 600px;
-    margin: 20px auto;
     border-collapse: collapse;
     text-align: center;
-    background-color: rgba(133, 133, 133, 0.3);
     border-radius: 6px;
 }
 #scoreTable th, #scoreTable td {
     padding: 10px 15px;
+    border-bottom: 1px solid rgba(133, 133, 133, 0.3);
 }
 #scoreTable th {
     color: white;
