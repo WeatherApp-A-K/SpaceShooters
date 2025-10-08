@@ -39,7 +39,7 @@ body{
     border-radius: 6px;
 }
 #scoreTableContainer {
-    width: 40%;
+    width: 350px;
     flex-direction: column;
     gap: 10px;
 }
@@ -94,6 +94,9 @@ body{
     color: white;
     font-weight: bold;
     transition: background-color 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 #mobileControls button:hover {
     background-color: rgb(38, 38, 38);
@@ -130,5 +133,18 @@ body{
         padding: 10px;
         border-radius: 6px;
         border: 1px solid white;
+    }
+}
+@media (max-width: 480px) {
+    #mobileControls button span {
+        display: none;
+    }
+    #scoreTableContainer {
+        width: 85% !important;          
+        box-sizing: border-box; 
+    }
+    #scoreTable {
+        width: 100%;        
+        font-size: 14px;        
     }
 }
