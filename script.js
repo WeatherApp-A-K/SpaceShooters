@@ -150,6 +150,8 @@ let alienVelocityY = 4.5;
 let alienWidth = unitSize * 3;
 let alienHeight = unitSize * 3;
 
+let explosionArray = [];
+
 let animationFrameId;
 
 let enemyInterval;
@@ -297,6 +299,8 @@ function gameStart(){
 
     startIntervals();
 
+    document.querySelector('#loadingScreen').style.display = 'none';
+
     animationFrameId = requestAnimationFrame(nextTick); 
 }
 function startIntervals() {
@@ -326,6 +330,7 @@ function nextTick(timeStamp){
             drawBullet(deltaTime);
             drawShootFlash();
             drawEnemies();
+            drawExplosion();
             drawLevelUpMessage();
             drawHud();
 
@@ -512,13 +517,18 @@ function drawEnemies(){
         }
     }
 }
-function drawExplosion(alien){
-    const explosionSize = alien.width;
+function drawExplosion(){
+    for(let i = explosionArray.length - 1; i >= 0; i--) {
+        const exp = explosionArray[i];
 
-    const x = alien.x + alien.width / 2 - explosionSize / 2;
-    const y = alien.y + alien.height / 2 - explosionSize / 2;
+        context.drawImage(loadedImages['explosion'], exp.x, exp.y, exp.width, exp.height);
 
-    context.drawImage(loadedImages['explosion'], x, y, explosionSize, explosionSize);
+        exp.timer--;
+
+        if(exp.timer <= 0){
+            explosionArray.splice(i, 1);
+        }
+    }
 }
 function drawShootFlash() {
     if(shootFlash) {
@@ -553,6 +563,8 @@ function moveEnemies(deltaTime) {
             }
         }
     }
+
+    alienArray = alienArray.filter(a => a.alive && a.y < gameBoard.height);
 }
 function changeDirection(event){
     const keyPressed = event.keyCode;
@@ -625,6 +637,8 @@ function drawBullet(deltaTime){
 
         context.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
     }
+
+    bulletArray = bulletArray.filter(b => b.y + b.height > 0);
 }
 function generateEnemy(){
     let randomX = Math.floor(Math.random() * (gameBoard.width - alienWidth));
@@ -690,7 +704,13 @@ function checkCollisions() {
                     clonedSpecialSound.play();
                 }
 
-                drawExplosion(alien);
+                explosionArray.push({
+                    x: alien.x + alien.width / 2 - alien.width / 2,
+                    y: alien.y + alien.height / 2 - alien.width / 2,
+                    width: alien.width,
+                    height: alien.height,
+                    timer: 2
+                });
 
                 score += alien.points;
                 gameScore.textContent = score;
@@ -698,6 +718,8 @@ function checkCollisions() {
             }
         }
     }
+
+    alienArray = alienArray.filter(a => a.alive && a.y < gameBoard.height);
 }
 function checkUpgrades() {
     const nextLevelIndex = currentLevel;
@@ -733,34 +755,33 @@ function applyLevelSettings(levelIndex) {
     }
 }
 function resetGame(){
-    running = false;
-    paused = false;
+    document.querySelector('#loadingScreen').style.display = 'flex';
 
-    redrawFrame = true;
+    setTimeout(() => {
+        running = false;
+        paused = false;
+        redrawFrame = true;
 
-    bulletArray = [];
-    alienArray = [];
+        bulletArray = [];
+        alienArray = [];
 
-    score = 0;
-    gameScore.textContent = score;
+        score = 0;
+        gameScore.textContent = score;
 
-    if(!backGroundVideo.paused){
-        backGroundVideo.pause();
-        backGroundVideo.currentTime = 0;
-    }
+        if(!backGroundVideo.paused){
+            backGroundVideo.pause();
+            backGroundVideo.currentTime = 0;
+        }
 
-    clearInterval(enemyInterval);
-    enemyInterval = null;
+        clearInterval(enemyInterval);
+        enemyInterval = null;
+        clearInterval(speedInterval);
+        speedInterval = null;
+        cancelAnimationFrame(animationFrameId);
+        lastTime = 0;
 
-    clearInterval(speedInterval);
-    speedInterval = null;
-
-    cancelAnimationFrame(animationFrameId);
-
-    lastTime = 0;
-
-    applyLevelSettings(0);
-
-    running = true;
-    gameStart();
+        applyLevelSettings(0);
+        running = true;
+        gameStart();
+    }, 300);
 }
