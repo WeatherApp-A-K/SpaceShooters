@@ -44,13 +44,13 @@ const LEVEL_SETTINGS = [
         shootCooldown: 300,
     },
     {
-        scoreThreshold: 100,
+        scoreThreshold: 500,
         backgroundSrc: BACKGROUNDS[5], 
         alienSpeed: 6.0,               
         shootCooldown: 300,
     },
     {
-        scoreThreshold: 200,
+        scoreThreshold: 1000,
         backgroundSrc: BACKGROUNDS[7], 
         alienSpeed: 7.5,               
         shootCooldown: 300,
