@@ -22,11 +22,13 @@ const BACKGROUNDS = [
     "Assets/Images/Backgrounds/space-background-3.mp4",
     "Assets/Images/Backgrounds/space-background-4.png",
     "Assets/Images/Backgrounds/space-background-5.png",
-    "Assets/Images/Backgrounds/space-background-7.gif"
+    "Assets/Images/Backgrounds/space-background-7.gif",
+    "Assets/Images/Backgrounds/special-background.png",
 ];
 
 const backGroundVideo = document.createElement("video");
 backGroundVideo.src = BACKGROUNDS[3];
+
 backGroundVideo.playsInline = true;
 backGroundVideo.loop = true;
 backGroundVideo.muted = true;
@@ -42,28 +44,34 @@ const LEVEL_SETTINGS = [
         shootCooldown: 300,
     },
     {
-        scoreThreshold: 500,
+        scoreThreshold: 100,
         backgroundSrc: BACKGROUNDS[5], 
         alienSpeed: 6.0,               
         shootCooldown: 300,
     },
     {
-        scoreThreshold: 1000,
-        backgroundSrc: BACKGROUNDS[2], 
+        scoreThreshold: 200,
+        backgroundSrc: BACKGROUNDS[7], 
         alienSpeed: 7.5,               
-        shootCooldown: 200,
+        shootCooldown: 300,
     },
     {
         scoreThreshold: 1500,
-        backgroundSrc: BACKGROUNDS[6],
-        alienSpeed: 10,              
-        shootCooldown: 100,
+        backgroundSrc: BACKGROUNDS[2], 
+        alienSpeed: 9,               
+        shootCooldown: 250,
     },
     {
         scoreThreshold: 2000,
+        backgroundSrc: BACKGROUNDS[6],
+        alienSpeed: 10.5,              
+        shootCooldown: 250,
+    },
+    {
+        scoreThreshold: 2500,
         backgroundSrc: BACKGROUNDS[3],
-        alienSpeed: 9,              
-        shootCooldown: 150,
+        alienSpeed: 12,              
+        shootCooldown: 250,
     },
 ];
 
@@ -71,7 +79,18 @@ const SHIP_SKINS = [
     "Assets/Images/Ships/spaceship.png",
     "Assets/Images/Ships/spaceship-1.png",
     "Assets/Images/Ships/spaceship-2.png"
-]
+];
+
+const IMAGES = {
+    ship: SHIP_SKINS[0],
+    enemyShip: "Assets/Images/Ships/enemy-spaceship.png",
+    explosion: "Assets/Images/explosion.png",
+    shoot: "Assets/Images/shoot.png",
+    planet: "Assets/Images/planet.png",
+    pumpkin: "Assets/Images/pumpkin.png"
+};
+
+const loadedImages = {};
 
 const ship = new Image();
 ship.src = SHIP_SKINS[0];
@@ -79,22 +98,19 @@ ship.src = SHIP_SKINS[0];
 const enemyShip = new Image();
 enemyShip.src = "Assets/Images/Ships/enemy-spaceship.png";
 
-const explosion = new Image();
-explosion.src = "Assets/Images/explosion.png";
+const SOUNDS = {
+    shooting: "Assets/Sounds/shoot.mp3",
+    explosion: "Assets/Sounds/explosion.mp3",
+    gameOver: "Assets/Sounds/game-over.mp3",
+    special: "Assets/Sounds/special-sound.mp3"
+};
 
-const shoot = new Image();
-shoot.src = "Assets/Images/shoot.png";
-
-const planetImage = new Image();
-planetImage.src = "Assets/Images/planet.png";
-
-const shootingSound = new Audio("Assets/Sounds/shoot.mp3");
-const explosionSound = new Audio("Assets/Sounds/explosion.mp3");
-const gameOverSound = new Audio("Assets/Sounds/game-over.mp3");
-const specialSound = new Audio("Assets/Sounds/special-sound.mp3");
+const loadedSounds = {};
 
 let running = false;
 let paused = false;
+
+let redrawFrame = true;
 
 let buttonPressed = {
     left: false,
@@ -151,15 +167,49 @@ function resizeShipPosition() {
     shipY = gameBoard.height - shipHeight * 1.5;
 }
 
+function loadAssets(callBack) {
+    let totalAssets = Object.keys(IMAGES).length + Object.keys(SOUNDS).length + 1;
+    let loadedCount = 0;
+
+    function checkLoaded() {
+        loadedCount++;
+        if(loadedCount === totalAssets) callBack();
+    }
+
+    for(const key in IMAGES) {
+        loadedImages[key] = new Image();
+        loadedImages[key].src = IMAGES[key];
+        loadedImages[key].onload = checkLoaded;
+    }
+
+    for(const key in SOUNDS){
+        loadedSounds[key] = new Audio(SOUNDS[key]);
+        loadedSounds[key].oncanplaythrough = checkLoaded;
+    };
+
+    backGroundImage.onload = checkLoaded;
+}
+
 window.addEventListener("resize", () => {
     resizeCanvas();
     resizeShipPosition();
 });
+
 window.addEventListener("load", () => {
     resizeCanvas();
     resizeShipPosition();
     applyLevelSettings(0);
     displayScores();
+
+    const savedSkin = Number(localStorage.getItem("selectedSkin"));
+    if(!isNaN(savedSkin)){
+        changeSkinSelect.value = savedSkin;
+        ship.src = SHIP_SKINS[savedSkin];
+    }
+
+    loadAssets(() => {
+        gameStart();
+    })
 });
 
 window.addEventListener("keydown", (event) => {
@@ -177,7 +227,7 @@ window.addEventListener("keydown", (event) => {
     if(event.code === "KeyP") {
         togglePause();
     }
-})
+});
 
 function updateVelocity() {
     touchXVelocity = 0;
@@ -219,14 +269,6 @@ shootBtn.addEventListener('touchend', (e) => {
     updateVelocity();
 });
 
-window.addEventListener("load", function() {
-    const savedSkin = Number(this.localStorage.getItem("selectedSkin"));
-    if(!isNaN(savedSkin)){
-        changeSkinSelect.value = savedSkin;
-        ship.src = SHIP_SKINS[savedSkin]
-    }
-});
-
 function changeSkin(index) {
     const newShip = new Image();
     newShip.src = SHIP_SKINS[index];
@@ -245,16 +287,7 @@ resetBtn.addEventListener("click", resetGame);
 
 pauseBtn.addEventListener("click", togglePause);
 
-clearScoreBtn.addEventListener("click", clearScore)
-
-let imagesLoaded = 0;
-
-backGroundImage.onload = ship.onload = enemyShip.onload = function(){
-    imagesLoaded++;
-    if(imagesLoaded === 3){
-        gameStart();
-    }
-}
+clearScoreBtn.addEventListener("click", clearScore);
 
 function gameStart(){
     running = true;
@@ -282,17 +315,22 @@ function nextTick(timeStamp){
     lastTime = timeStamp;
 
     if(running && !paused){
-        drawBackGround();
-        drawShip();
         moveShip(deltaTime);
-        drawBullet(deltaTime);
-        drawShootFlash();
-        drawEnemies();
         moveEnemies(deltaTime);
         checkCollisions();
         checkUpgrades();
-        drawLevelUpMessage();
-        drawHud();
+
+        if(redrawFrame) {
+            drawBackGround();
+            drawShip();
+            drawBullet(deltaTime);
+            drawShootFlash();
+            drawEnemies();
+            drawLevelUpMessage();
+            drawHud();
+
+            redrawFrame = false;
+        }
         
         animationFrameId = requestAnimationFrame(nextTick);
     }
@@ -371,6 +409,8 @@ function moveShip(deltaTime){
         shipX = gameBoard.width / 2 - shipWidth / 2;
     }
 
+    const prevX = shipX;
+
     shipX += (xVelocity + touchXVelocity) * deltaTime * 15;
 
     if(shipX < 0){
@@ -378,6 +418,8 @@ function moveShip(deltaTime){
     }else if(shipX + (shipWidth) > gameBoard.width){
         shipX = gameBoard.width - (shipWidth);
     }
+
+    if(shipX !== prevX) redrawFrame = true;
 }
 function drawGameOverScreen() {
     console.log("Game over!");
@@ -393,7 +435,7 @@ function drawGameOverScreen() {
     context.textBaseline = "middle";
     context.fillText("Game over!", gameBoard.width / 2, gameBoard.height / 2);
 
-    const clonedGameOverSound = gameOverSound.cloneNode();
+    const clonedGameOverSound = loadedSounds['gameOver'].cloneNode();
     clonedGameOverSound.play();
 }
 function drawPauseScreen(){
@@ -442,7 +484,7 @@ function drawLevelUpMessage() {
     }
 }
 function drawShip(){
-    context.drawImage(ship, shipX, shipY, shipWidth, shipHeight); 
+    context.drawImage(loadedImages['ship'], shipX, shipY, shipWidth, shipHeight); 
 }
 function drawBackGround(){
     if(currentLevel === 5 && backGroundVideo.readyState >= 2){
@@ -456,10 +498,16 @@ function drawEnemies(){
     for(let i = 0; i < alienArray.length; i++){
         let alien = alienArray[i];
         if(alien.alive){
-            if(alien.special){
-                context.drawImage(planetImage, alien.x, alien.y, alien.width, alien.height);
-            }else{
-                context.drawImage(enemyShip, alien.x, alien.y, alien.width, alien.height);
+            switch(alien.type) {
+                case 'alien':
+                    context.drawImage(loadedImages['enemyShip'], alien.x, alien.y, alien.width, alien.height);
+                    break;
+                case 'pumpkin':
+                    context.drawImage(loadedImages['pumpkin'], alien.x, alien.y, alien.width, alien.height);
+                    break;
+                case 'planet': 
+                    context.drawImage(loadedImages['planet'], alien.x, alien.y, alien.width, alien.height);
+                    break;
             }
         }
     }
@@ -470,11 +518,11 @@ function drawExplosion(alien){
     const x = alien.x + alien.width / 2 - explosionSize / 2;
     const y = alien.y + alien.height / 2 - explosionSize / 2;
 
-    context.drawImage(explosion, x, y, explosionSize, explosionSize);
+    context.drawImage(loadedImages['explosion'], x, y, explosionSize, explosionSize);
 }
 function drawShootFlash() {
     if(shootFlash) {
-        context.drawImage(shoot, shootFlash.x, shootFlash.y, unitSize * 2, unitSize * 2);
+        context.drawImage(loadedImages['shoot'], shootFlash.x, shootFlash.y, unitSize * 2, unitSize * 2);
         shootFlash.timer--;
 
         if(shootFlash.timer <= 0) {
@@ -486,7 +534,11 @@ function moveEnemies(deltaTime) {
     for(let i = 0; i < alienArray.length; i++){
         let alien = alienArray[i];
         if(alien.alive){
+            const prevY = alien.y;
             alien.y += alienVelocityY * deltaTime * 15;
+
+            if (alien.y !== prevY) redrawFrame = true;
+
             if(alien.y + alien.height >= gameBoard.height){
                 running = false;
             }
@@ -544,7 +596,7 @@ function shootBullet(event){
             used: false
         }
 
-        const clonedShootingSound = shootingSound.cloneNode();
+        const clonedShootingSound = loadedSounds['shooting'].cloneNode();
         clonedShootingSound.play();
 
         shootFlash = {
@@ -555,6 +607,8 @@ function shootBullet(event){
 
         bulletArray.push(bullet);
 
+        redrawFrame = true;
+
         setTimeout(() => {
             canShoot = true;
         }, shootCooldown);
@@ -563,38 +617,54 @@ function shootBullet(event){
 function drawBullet(deltaTime){
     for(let i = 0; i < bulletArray.length; i++){
         let bullet = bulletArray[i];
+
+
         bullet.y += bulletVelocityY * deltaTime * 15;
+
         context.fillStyle = "white";
+
         context.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
     }
 }
 function generateEnemy(){
     let randomX = Math.floor(Math.random() * (gameBoard.width - alienWidth));
 
-    const isPlanet = Math.random() < 0.05;
+    const typeChance = Math.random();
+    let enemy;
 
-    if(isPlanet){
-        let moon = {
+    if(typeChance < 0.05){
+        enemy = {
             x: randomX,
             y: 0,
             width: alienWidth,
             height: alienHeight,
             alive: true,
-            special: true,
-            points: 100,
+            type: 'planet',
+            points: 100
+        }
+        alienArray.push(enemy);
+    } else if (typeChance < 0.2) {
+        enemy = {
+            x: randomX,
+            y: 0,
+            width: alienWidth,
+            height: alienHeight,
+            alive: true,
+            type: 'pumpkin',
+            points: 50,
         };
-        alienArray.push(moon);
+        alienArray.push(enemy);
     } else {
-        let alien = {
+        enemy = {
             x: randomX,
             y: 0,
             width: alienWidth,
             height: alienHeight,
             alive: true,
-            special: false,
+            type: 'alien',
             points: 10
         }
-        alienArray.push(alien);
+        alienArray.push(enemy);
     }
 }
 function checkCollisions() {
@@ -612,11 +682,11 @@ function checkCollisions() {
                 alien.alive = false;
                 bulletArray.splice(j, 1);
 
-                if(!alien.special){
-                    const clonedExplosionSound = explosionSound.cloneNode();
+                if(alien.type === 'alien'){
+                    const clonedExplosionSound = loadedSounds['explosion'].cloneNode();
                     clonedExplosionSound.play();
                 } else {
-                    const clonedSpecialSound = specialSound.cloneNode();
+                    const clonedSpecialSound = loadedSounds['special'].cloneNode();
                     clonedSpecialSound.play();
                 }
 
@@ -665,6 +735,8 @@ function applyLevelSettings(levelIndex) {
 function resetGame(){
     running = false;
     paused = false;
+
+    redrawFrame = true;
 
     bulletArray = [];
     alienArray = [];
