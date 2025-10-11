@@ -170,7 +170,7 @@ function resizeShipPosition() {
 }
 
 function loadAssets(callBack) {
-    let totalAssets = Object.keys(IMAGES).length + Object.keys(SOUNDS).length + 1;
+    let totalAssets = Object.keys(IMAGES).length + 1;
     let loadedCount = 0;
 
     function checkLoaded() {
@@ -182,14 +182,15 @@ function loadAssets(callBack) {
         loadedImages[key] = new Image();
         loadedImages[key].src = IMAGES[key];
         loadedImages[key].onload = checkLoaded;
+        loadedImages[key].onerror = checkLoaded;
     }
+
+    backGroundImage.onload = checkLoaded;
+    backGroundImage.onerror = checkLoaded;
 
     for(const key in SOUNDS){
         loadedSounds[key] = new Audio(SOUNDS[key]);
-        loadedSounds[key].oncanplaythrough = checkLoaded;
-    };
-
-    backGroundImage.onload = checkLoaded;
+    }
 }
 
 window.addEventListener("resize", () => {
