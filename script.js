@@ -157,6 +157,8 @@ let animationFrameId;
 let enemyInterval;
 let speedInterval;
 
+let enemyIntervalPeriod = 1000;
+
 let lastTime = 0;
 
 function resizeCanvas() {
@@ -205,6 +207,7 @@ window.addEventListener("load", () => {
     displayScores();
 
     const savedSkin = Number(localStorage.getItem("selectedSkin"));
+
     if(!isNaN(savedSkin)){
         changeSkinSelect.value = savedSkin;
         ship.src = SHIP_SKINS[savedSkin];
@@ -306,12 +309,12 @@ function gameStart(){
 }
 function startIntervals() {
     if(!enemyInterval) {
-        enemyInterval = setInterval(generateEnemy, 1000);
+        enemyInterval = setInterval(generateEnemy, enemyIntervalPeriod);
     }
     if(!speedInterval){
         speedInterval = setInterval(() => {
             alienVelocityY += 0.5;
-        }, 5000);
+        }, 2500);
     }
 }
 function nextTick(timeStamp){
@@ -490,7 +493,7 @@ function drawLevelUpMessage() {
     }
 }
 function drawShip(){
-    context.drawImage(loadedImages['ship'], shipX, shipY, shipWidth, shipHeight); 
+    context.drawImage(ship, shipX, shipY, shipWidth, shipHeight); 
 }
 function drawBackGround(){
     if(currentLevel === 5 && backGroundVideo.readyState >= 2){
@@ -729,7 +732,8 @@ function checkUpgrades() {
         const nextLevelSettings = LEVEL_SETTINGS[nextLevelIndex];
 
         if(score >= nextLevelSettings.scoreThreshold) {
-            applyLevelSettings(nextLevelIndex)
+            applyLevelSettings(nextLevelIndex);
+            enemyIntervalPeriod -= 200;
         }
     }
 }
@@ -776,9 +780,12 @@ function resetGame(){
 
         clearInterval(enemyInterval);
         enemyInterval = null;
+
         clearInterval(speedInterval);
         speedInterval = null;
+
         cancelAnimationFrame(animationFrameId);
+
         lastTime = 0;
 
         applyLevelSettings(0);
