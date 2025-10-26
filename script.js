@@ -78,16 +78,18 @@ const LEVEL_SETTINGS = [
 const SHIP_SKINS = [
     "Assets/Images/Ships/spaceship.png",
     "Assets/Images/Ships/spaceship-1.png",
-    "Assets/Images/Ships/spaceship-2.png"
+    "Assets/Images/Ships/spaceship-2.png",
+    "Assets/Images/Ships/spaceship-3.png"
 ];
 
 const IMAGES = {
     ship: SHIP_SKINS[0],
     enemyShip: "Assets/Images/Ships/enemy-spaceship.png",
-    explosion: "Assets/Images/explosion.png",
-    shoot: "Assets/Images/shoot.png",
-    planet: "Assets/Images/planet.png",
-    pumpkin: "Assets/Images/pumpkin.png"
+    explosion: "Assets/Images/Effects/explosion.png",
+    shoot: "Assets/Images/Effects/shoot.png",
+    meteorite: "Assets/Images/Entities/meteorite.png",
+    planet: "Assets/Images/Entities/planet.png",
+    pumpkin: "Assets/Images/Entities/pumpkin.png"
 };
 
 const loadedImages = {};
@@ -157,9 +159,11 @@ let animationFrameId;
 let enemyInterval;
 let speedInterval;
 
-let enemyIntervalPeriod = 1000;
+let enemySpawnInterval = 1000;
 
 let lastTime = 0;
+
+let fps = 0;
 
 function resizeCanvas() {
     gameBoard.width = Math.min(window.innerWidth * 0.95, 500); 
@@ -309,7 +313,7 @@ function gameStart(){
 }
 function startIntervals() {
     if(!enemyInterval) {
-        enemyInterval = setInterval(generateEnemy, enemyIntervalPeriod);
+        enemyInterval = setInterval(generateEnemy, enemySpawnInterval);
     }
     if(!speedInterval){
         speedInterval = setInterval(() => {
@@ -321,6 +325,8 @@ function nextTick(timeStamp){
     if(!lastTime) lastTime = timeStamp;
     const deltaTime = (timeStamp - lastTime) / 1000;
     lastTime = timeStamp;
+
+    if(deltaTime) fps = 1 / deltaTime;
 
     if(running && !paused){
         moveShip(deltaTime);
@@ -463,6 +469,14 @@ function drawHud() {
 
     context.fillText("Level " + currentLevel, 10, 10);
 
+    if(fps >= 50) context.fillStyle = "green";
+    else if(fps >= 30) context.fillStyle = "yellow";
+    else context.fillStyle = "red";
+
+    context.fillText("FPS " + fps.toFixed(2), 10, 35);
+
+    context.fillStyle = "white";
+
     context.textAlign = "right";
     
     context.fillText("Best score: " + getMaxScore(), gameBoard.width - 10, 10);
@@ -511,11 +525,18 @@ function drawEnemies(){
                 case 'alien':
                     context.drawImage(loadedImages['enemyShip'], alien.x, alien.y, alien.width, alien.height);
                     break;
-                case 'pumpkin':
-                    context.drawImage(loadedImages['pumpkin'], alien.x, alien.y, alien.width, alien.height);
+                case 'meteorite':
+                    context.save(); 
+                    context.translate(alien.x + alien.width / 2, alien.y + alien.height / 2);
+                    context.rotate(alien.rotation); 
+                    context.drawImage(loadedImages['meteorite'], -alien.width / 2, -alien.height / 2, alien.width, alien.height);
+                    context.restore();
                     break;
                 case 'planet': 
                     context.drawImage(loadedImages['planet'], alien.x, alien.y, alien.width, alien.height);
+                    break;
+                case 'pumpkin':
+                    context.drawImage(loadedImages['pumpkin'], alien.x, alien.y, alien.width, alien.height);
                     break;
             }
         }
@@ -553,7 +574,11 @@ function moveEnemies(deltaTime) {
 
             if (alien.y !== prevY) redrawFrame = true;
 
-            if(alien.y + alien.height >= gameBoard.height){
+            if(alien.type === 'meteorite') {
+                alien.rotation += alien.rotationSpeed * deltaTime * 5;
+            }
+
+            if(alien.y + alien.height >= gameBoard.height && alien.type != 'meteorite'){
                 running = false;
             }
 
@@ -601,7 +626,7 @@ function stopShip(event){
     }
 }
 function shootBullet(event){
-    if(event.code == "Space" && canShoot){
+    if(event.code === "Space" && canShoot){
         canShoot = false;
 
         let bullet = {
@@ -650,7 +675,7 @@ function generateEnemy(){
     const typeChance = Math.random();
     let enemy;
 
-    if(typeChance < 0.05){
+    if(typeChance < 0.01){
         enemy = {
             x: randomX,
             y: 0,
@@ -660,19 +685,39 @@ function generateEnemy(){
             type: 'planet',
             points: 100
         }
+
         alienArray.push(enemy);
-    } else if (typeChance < 0.2) {
+    } else if (typeChance < 0.15) {
         enemy = {
             x: randomX,
             y: 0,
-            width: alienWidth,
-            height: alienHeight,
+            width: alienWidth - 15,
+            height: alienHeight - 15,
             alive: true,
             type: 'pumpkin',
             points: 50,
         };
+
         alienArray.push(enemy);
-    } else {
+    } else if(typeChance < 0.35) {
+        const scale = 0.5 + Math.random() * 1.5;
+
+        enemy = {
+            x: randomX,
+            y: 0,
+            width: alienWidth * scale,
+            height: alienHeight * scale,
+            alive: true,
+            type: 'meteorite',
+            scale: scale,
+            points: Math.floor(5 * scale),
+            rotation: Math.random() * Math.PI * 2,
+            rotationSpeed: (Math.random() - 0.5) * 2
+        };
+
+        alienArray.push(enemy);
+    }
+    else {
         enemy = {
             x: randomX,
             y: 0,
@@ -682,6 +727,7 @@ function generateEnemy(){
             type: 'alien',
             points: 10
         }
+
         alienArray.push(enemy);
     }
 }
@@ -700,7 +746,7 @@ function checkCollisions() {
                 alien.alive = false;
                 bulletArray.splice(j, 1);
 
-                if(alien.type === 'alien'){
+                if(alien.type === 'alien' || alien.type === 'meteorite'){
                     const clonedExplosionSound = loadedSounds['explosion'].cloneNode();
                     clonedExplosionSound.play();
                 } else {
@@ -733,7 +779,6 @@ function checkUpgrades() {
 
         if(score >= nextLevelSettings.scoreThreshold) {
             applyLevelSettings(nextLevelIndex);
-            enemyIntervalPeriod -= 200;
         }
     }
 }
@@ -746,6 +791,8 @@ function applyLevelSettings(levelIndex) {
 
     alienVelocityY = settings.alienSpeed;
     shootCooldown = settings.shootCooldown;
+
+    enemySpawnInterval -= 200;
 
     if(settings.backgroundSrc.endsWith('.mp4')){
         backGroundVideo.src = settings.backgroundSrc; 
@@ -773,6 +820,8 @@ function resetGame(){
         score = 0;
         gameScore.textContent = score;
 
+        pauseBtn.textContent = "Pause";
+
         if(!backGroundVideo.paused){
             backGroundVideo.pause();
             backGroundVideo.currentTime = 0;
@@ -780,6 +829,8 @@ function resetGame(){
 
         clearInterval(enemyInterval);
         enemyInterval = null;
+
+        enemySpawnInterval = 1000;
 
         clearInterval(speedInterval);
         speedInterval = null;
