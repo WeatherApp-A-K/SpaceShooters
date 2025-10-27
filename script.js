@@ -700,7 +700,7 @@ function generateEnemy(){
 
         alienArray.push(enemy);
     } else if(typeChance < 0.35) {
-        const scale = 0.5 + Math.random() * 1.5;
+        const scale = 0.5 + Math.random() * 0.85;
 
         enemy = {
             x: randomX,
@@ -714,6 +714,8 @@ function generateEnemy(){
             rotation: Math.random() * Math.PI * 2,
             rotationSpeed: (Math.random() - 0.5) * 2
         };
+
+        if(scale > 1) enemy['easterEgg'] = ':)';
 
         alienArray.push(enemy);
     }
